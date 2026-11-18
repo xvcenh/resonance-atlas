@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#191915">
+  <title>声纹沙盘 · Resonance Atlas</title><meta name="description" content="一台可以拨沙、调音和导出图案的克拉尼声纹实验台。">
+  <link rel="icon" href="icon.svg"><link rel="stylesheet" href="studio.css"><script defer src="instrument.js"></script>
+</head>
+<body>
+<header class="mast"><div class="shell mast-in"><a class="brand" href="./"><i class="brand-sign" aria-hidden="true">✳</i> Resonance Atlas</a><nav><a href="https://xvcenh.github.io/projects/">← 项目实验室</a><a href="https://github.com/xvcenh/resonance-atlas">GitHub ↗</a></nav></div></header>
+<main class="shell">
+  <section class="intro"><div><p class="eyebrow"><i></i> CYMATICS INSTRUMENT</p><h1>声纹沙盘<span>.</span></h1></div><div class="intro-text"><p lang="en">Resonance Atlas</p><span>以振动写线，让沙粒显形。拖过振板拨散沙粒，看它们重新聚成声纹。</span></div></section>
+  <div class="console">
+    <section class="plate-panel" aria-labelledby="plate-title">
+      <div class="panel-top"><h2 id="plate-title"><i></i> 振板</h2><span id="plate-readout">MODE 03 / 07</span></div>
+      <div class="plate-area"><span class="fid tl"></span><span class="fid tr"></span><span class="fid bl"></span><span class="fid br"></span><canvas id="plate" width="780" height="620" aria-label="声纹振板，可拖动拨沙，也可使用下方拨散按钮">此实验需要支持 Canvas 的浏览器。</canvas></div>
+      <div class="plate-foot"><span id="state" role="status">正在聚沙</span><div><button id="pause" type="button" aria-pressed="false">暂停</button><button id="scatter" type="button">拨散沙粒 ↗</button></div></div>
+    </section>
+    <aside class="desk" aria-label="调制台">
+      <div class="desk-title"><h2>调制台</h2><span>CONTROLS</span></div>
+      <div class="controls">
+        <label for="m"><span>横向模态 <i>m</i></span><output id="m-out" for="m">03</output></label><input id="m" type="range" min="1" max="12" step="1" value="3">
+        <label for="n"><span>纵向模态 <i>n</i></span><output id="n-out" for="n">07</output></label><input id="n" type="range" min="1" max="12" step="1" value="7">
+        <label for="balance"><span>叠加强度 <i>β</i></span><output id="balance-out" for="balance">1.00</output></label><input id="balance" type="range" min="0" max="1" step="0.01" value="1">
+      </div>
+      <fieldset class="palette"><legend>沙粒色谱</legend><button data-palette="copper" aria-pressed="true">赤铜</button><button data-palette="ice" aria-pressed="false">冰蓝</button><button data-palette="leaf" aria-pressed="false">青瓷</button></fieldset>
+      <div class="desk-act"><button id="sound" aria-pressed="false"><span aria-hidden="true">♪</span> 试听参考音 <small id="pitch"></small></button><button id="export">导出声纹 PNG <span aria-hidden="true">↓</span></button></div>
+    </aside>
+  </div>
+  <section class="presets" aria-labelledby="preset-title"><div class="preset-title"><h2 id="preset-title">模态图谱</h2><span>选择一个起点</span></div><div id="presets"></div></section>
+  <details class="notes"><summary>沙粒为什么会排成线？</summary><div><p>振动板上，位移接近零的位置称为节点。克拉尼实验中的沙粒会在这些区域聚集，显出原本看不见的振动花纹。</p><p>这里用两组互换方向的余弦波模拟方板模态。滑杆改变空间波形，参考音随模态升降；音高用于听觉对照。导出的 PNG 会带上参数，便于复现。</p><a href="https://github.com/evoluteur/cymatics">实验灵感 ↗</a></div></details>
+  <noscript><p>请启用 JavaScript 以调节振板和导出图案。</p></noscript>
+</main>
+<footer class="shell footer"><span>徐辰 · 工程手记</span><a href="https://xvcenh.github.io/">回到博客 ↗</a></footer>
+</body></html>
