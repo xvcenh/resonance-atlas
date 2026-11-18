@@ -7,7 +7,7 @@
   if (!ctx) return;
 
   const presets = [
-    {name:"铜花", m:3, n:7, b:1, palette:"copper"},
+    {name:"铜花", m:5, n:11, b:1, palette:"copper"},
     {name:"潮汐", m:2, n:5, b:.64, palette:"ice"},
     {name:"织锦", m:6, n:10, b:1, palette:"leaf"},
     {name:"蝶翼", m:1, n:4, b:.88, palette:"copper"}
@@ -25,9 +25,10 @@
   const x = new Float32Array(density), y = new Float32Array(density);
   const vx = new Float32Array(density), vy = new Float32Array(density);
   const size = new Float32Array(density);
+  const offsetX = new Float32Array(density), offsetY = new Float32Array(density);
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
-  const model = {m:3, n:7, b:1, palette:"copper"};
-  let paused = reduced.matches, visible = true, held = null, frame = 0, last = 0, time = 0;
+  const model = {m:5, n:11, b:1, palette:"copper"};
+  let paused = reduced.matches, visible = true, held = null, frame = 0, last = 0;
   let width = 1, height = 1, plateBounds, base, audio, voice, volume, activeAudio = false;
   let amount = density, serial = 17;
   const clamp = (n,a,b) => Math.max(a,Math.min(b,n));
@@ -42,7 +43,7 @@
   function flat() { return model.m === model.n && Math.abs(model.b-1)<1e-7; }
   function compile() {
     const {m,n,b} = model;
-    const cm=[],cn=[],dm=[],dn=[];
+    const cm=[],cn=[],dm=[],dn=[], cancelled=flat();
     for(let a=0;a<sides;a++){
       const p=Math.PI*a/(sides-1);
       cm[a]=Math.cos(m*p); cn[a]=Math.cos(n*p);
@@ -53,7 +54,7 @@
       const value=cm[i]*cn[j]-b*cn[i]*cm[j];
       const dx=dm[i]*cn[j]-b*dn[i]*cm[j], dy=cm[i]*dn[j]-b*cn[i]*dm[j];
       const grad=dx*dx+dy*dy;
-      field[k]=flat()?1:Math.abs(value)/Math.sqrt(grad+.00001);
+      field[k]=cancelled?1:Math.abs(value)/Math.sqrt(grad+.00001);
       stepX[k]=clamp(-value*dx/(grad+.08),-.03,.03);
       stepY[k]=clamp(-value*dy/(grad+.08),-.03,.03);
     }
@@ -61,13 +62,16 @@
   }
   function sample(grain,settle) {
     let a=random(), b=random();
+    const spread=random()<.78?.005:.021;
+    offsetX[grain]=(random()+random()-1)*spread;
+    offsetY[grain]=(random()+random()-1)*spread;
     if(settle && !flat() && random()>.09){
       for(let rep=0;rep<18;rep++){
         // Bilinear interpolation avoids snapping grains onto a visible sampling grid.
         const d=drift(a,b);
         a=clamp(a+d[0]*.65,.001,.999); b=clamp(b+d[1]*.65,.001,.999);
       }
-      a+=(random()-.5)*.004; b+=(random()-.5)*.004;
+      a+=offsetX[grain]; b+=offsetY[grain];
     }
     x[grain]=clamp(a,0,1); y[grain]=clamp(b,0,1); vx[grain]=vy[grain]=0;
     size[grain]=.35+random()**2*1.08;
@@ -86,7 +90,7 @@
     const rate=Math.min(dt*30,1.6);
     const friction=Math.pow(.79,rate);
     for(let i=0;i<amount;i++){
-      const d=drift(x[i],y[i]);
+      const d=drift(x[i]-offsetX[i],y[i]-offsetY[i]);
       const noise=.00027*(.6+size[i]);
       vx[i]=friction*vx[i]+rate*(d[0]*.057+(random()-.5)*noise);
       vy[i]=friction*vy[i]+rate*(d[1]*.057+(random()-.5)*noise);
@@ -136,7 +140,7 @@
     for(let group=0;group<colors.length;group++){
       c.fillStyle=colors[group];
       for(let i=group;i<amount;i+=colors.length){
-        const r=Math.max(.38,size[i]*scale);
+        const r=Math.max(.44,size[i]*scale*1.18);
         c.fillRect(left+x[i]*side,top+y[i]*side,r,r);
       }
     }
@@ -157,7 +161,7 @@
     if(paused||!visible||document.hidden)return;
     if(!last||now-last>=32){
       const dt=last?Math.min((now-last)/1000,.06):.033;
-      time+=dt;advance(dt);draw();last=now;
+      advance(dt);draw();last=now;
     }
     frame=requestAnimationFrame(tick);
   }
@@ -195,11 +199,21 @@
   reduced.addEventListener("change",()=>{paused=reduced.matches;if(paused)seed(true);draw();setPlay();});
   function pitch() { return Math.round(110*Math.hypot(model.m,model.n)/Math.sqrt(8)); }
   function updateTone(){
-    $("pitch").textContent=pitch()+" Hz";
+    const frequency=pitch();
+    $("pitch").textContent=frequency+" Hz";
+    const scope=$("scope"), pen=scope.getContext("2d"), w=scope.width, h=scope.height;
+    pen.clearRect(0,0,w,h);
+    pen.strokeStyle="#555245";pen.lineWidth=1;pen.beginPath();
+    for(let i=0;i<=8;i++){pen.moveTo(w*i/8,0);pen.lineTo(w*i/8,h);}
+    pen.moveTo(0,h/2);pen.lineTo(w,h/2);pen.stroke();
+    pen.strokeStyle=palettes[model.palette].grains[3];pen.lineWidth=2.3;pen.beginPath();
+    for(let i=0;i<=w;i++){const y=h/2-Math.sin(i/w*.016*frequency*Math.PI*2)*h*.34;i?pen.lineTo(i,y):pen.moveTo(i,y);}
+    pen.stroke();
     if(voice)voice.frequency.setTargetAtTime(pitch(),audio.currentTime,.045);
   }
   function silence(){
     activeAudio=false;
+    $("sound-label").textContent="试听参考音";
     if(volume)volume.gain.setTargetAtTime(0,audio.currentTime,.025);
     $("sound").setAttribute("aria-pressed","false");
   }
@@ -211,7 +225,7 @@
         audio=new Audio();voice=audio.createOscillator();volume=audio.createGain();volume.gain.value=0;
         voice.connect(volume);volume.connect(audio.destination);voice.start();
       }
-      await audio.resume();if(document.hidden)return;activeAudio=true;updateTone();
+      await audio.resume();if(document.hidden)return;activeAudio=true;$("sound-label").textContent="停止参考音";updateTone();
       volume.gain.setTargetAtTime(.055,audio.currentTime,.035);
       $("sound").setAttribute("aria-pressed","true");
     }catch{$("state").textContent="当前浏览器无法播放参考音";}
@@ -244,7 +258,7 @@
     updateTone();setPlay();
   }
   function changed(){
-    compile();if(paused)seed(true);
+    compile();if(flat())seed(false);else if(paused)seed(true);
     else for(let i=0;i<amount;i+=7)sample(i,false);
     sync(true);draw();
   }
@@ -279,7 +293,8 @@
     c.fillStyle="#24231e";c.fillRect(0,1400,1400,90);
     c.fillStyle="#f2e9d9";c.font="bold 29px system-ui";c.fillText("声纹沙盘  /  Resonance Atlas",40,1456);
     c.textAlign="right";c.font="21px monospace";c.fillText("m "+model.m+"   n "+model.n+"   β "+model.b.toFixed(2)+"   "+model.palette,1360,1455);
-    print.toBlob(blob=>{if(!blob)return;const link=document.createElement("a");link.download="resonance-"+model.m+"-"+model.n+"-"+model.palette+".png";link.href=URL.createObjectURL(blob);link.click();setTimeout(()=>URL.revokeObjectURL(link.href),15000);},"image/png");
+    const filename="resonance-"+model.m+"-"+model.n+"-"+model.palette+".png";
+    print.toBlob(blob=>{if(!blob)return;const link=document.createElement("a");link.download=filename;link.href=URL.createObjectURL(blob);link.click();setTimeout(()=>URL.revokeObjectURL(link.href),15000);},"image/png");
   });
   readUrl();compile();seed(true);resize();sync();
   new ResizeObserver(resize).observe(canvas);

@@ -2,6 +2,8 @@
 
 一台在浏览器中运行的克拉尼声纹实验台。调节两组模态和叠加强度，拨动沙粒，试听参考音，或导出带参数的 PNG。[打开实验](https://xvcenh.github.io/resonance-atlas/)
 
+![声纹沙盘运行画面](preview.webp)
+
 ## 运行
 
 双击 `index.html` 即可离线使用。也可在项目根目录执行 `python -m http.server 8080`，然后访问本机 8080 端口。网站使用原生 Canvas 2D 和 Web Audio，首次点击试听才创建音源。浏览器地址会记录模态、配色和叠加强度，可用于分享。
