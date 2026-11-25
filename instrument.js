@@ -287,6 +287,20 @@
     label.append(name,code);button.append(image,label);$("presets").append(button);
     button.onclick=()=>{Object.assign(model,{m:p.m,n:p.n,b:p.b,palette:p.palette});changed();};
   });
+  const share = $("share");
+  if (location.protocol === "file:") share.hidden = true;
+  share.addEventListener("click", async () => {
+    const url = new URL(location.href);
+    for (const [key, value] of Object.entries({m:model.m, n:model.n, b:model.b, color:model.palette})) {
+      url.searchParams.set(key, value);
+    }
+    try {
+      await navigator.clipboard.writeText(url.href);
+      $("state").textContent = "参数链接已复制";
+    } catch {
+      window.prompt("复制当前声纹参数链接", url.href);
+    }
+  });
   $("export").addEventListener("click",()=>{
     const print=document.createElement("canvas");print.width=1400;print.height=1490;
     const c=print.getContext("2d");paint(c,1400,1400,backdrop(1400,1400));
